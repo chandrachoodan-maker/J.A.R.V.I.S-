@@ -13,6 +13,7 @@ module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method === "GET") return res.status(200).json({ service: "JARVIS API", status: "online", geminiKeyConfigured: Boolean(process.env.GEMINI_API_KEY) });
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed." });
 
   const apiKey = process.env.GEMINI_API_KEY;
