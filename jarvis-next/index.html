@@ -33,7 +33,7 @@ button,input,select{font:inherit}button{cursor:pointer;color:var(--white);backgr
 <div class="settings">
 <div class="field"><label for="voice">Available English voices</label><select id="voice"><option>Loading voices…</option></select></div>
 <div class="field"><label for="rate">Speaking pace <span id="rateVal">0.90</span></label><input id="rate" type="range" min=".75" max="1.05" step=".01" value=".90"></div>
-<div class="field"><label for="pitch">Voice depth <span id="pitchVal">0.78</span></label><input id="pitch" type="range" min=".55" max="1.1" step=".01" value=".78"></div>
+<div class="field"><label for="pitch">Voice depth <span id="pitchVal">0.72</span></label><input id="pitch" type="range" min=".55" max="1.1" step=".01" value=".72"></div>
 </div>
 <p class="small">For the closest result, install an English (United Kingdom) male text-to-speech voice in your Android or Windows system settings, then select it here. Browsers do not reliably report voice gender, so a deep male voice cannot be guaranteed by code alone.</p>
 </section>
@@ -60,10 +60,17 @@ function addMessage(text,who){
  const body=document.createElement("span");body.textContent=text;el.append(label,body);$("messages").append(el);$("messages").scrollTop=$("messages").scrollHeight;
 }
 function chooseVoice(){
- const select=$("voice");const chosen=voices.find(v=>v.voiceURI===select.value)||voices.find(v=>v.voiceURI===storedVoice);
- if(chosen)return chosen;
+ const select=$("voice");
  const maleHints=/\b(daniel|george|ryan|arthur|oliver|male|alex|guy|lee|fred|rishi|aaron)\b/i;
- return voices.find(v=>/^en-GB/i.test(v.lang)&&maleHints.test(v.name))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang))||null;
+ const maleBritish=voices.find(v=>/^en-GB/i.test(v.lang)&&maleHints.test(v.name));
+ const maleEnglish=voices.find(v=>/^en/i.test(v.lang)&&maleHints.test(v.name));
+ const saved=voices.find(v=>v.voiceURI===storedVoice);
+ const selected=voices.find(v=>v.voiceURI===select.value);
+ return maleBritish||maleEnglish||
+   (selected&&maleHints.test(selected.name)?selected:null)||
+   (saved&&maleHints.test(saved.name)?saved:null)||
+   voices.find(v=>/^en-GB/i.test(v.lang))||
+   voices.find(v=>/^en/i.test(v.lang))||null;
 }
 function loadVoices(){
  voices=synth?synth.getVoices().filter(v=>/^en/i.test(v.lang)):[];
