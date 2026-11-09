@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111d">
+<meta name="description" content="JARVIS — a zero-cost, voice-first personal assistant.">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>J.A.R.V.I.S. — Personal Interface</title>
+<style>
+:root{color-scheme:dark;--bg:#06101b;--panel:#0b1b2b;--line:#1a3c52;--cyan:#67d8ef;--muted:#8ba8b9;--white:#eaf7fb;--gold:#d8b878}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#12334a 0%,#071421 48%,#030912 100%);color:var(--white);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit}button{cursor:pointer;color:var(--white);background:#10283a;border:1px solid var(--line);border-radius:12px;padding:11px 15px}button:hover{border-color:var(--cyan)}button:disabled{opacity:.45;cursor:not-allowed}
+.wrap{width:min(920px,100%);margin:auto;padding:22px 16px 40px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{letter-spacing:.25em;font-size:13px;color:var(--cyan)}.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}.dot{width:7px;height:7px;border-radius:50%;background:#61d6a5;box-shadow:0 0 12px #61d6a5}
+.hero{text-align:center;padding:32px 0 24px}.orb{width:142px;height:142px;margin:0 auto 18px;border-radius:50%;border:1px solid #2c718a;display:grid;place-items:center;background:radial-gradient(circle,#17425a 0,#0a2132 48%,#06111d 72%);box-shadow:0 0 35px #1a789055,inset 0 0 28px #4bc5e933;position:relative}.orb:before,.orb:after{content:"";position:absolute;inset:-9px;border:1px solid #2b7088;border-radius:50%;opacity:.55}.orb:after{inset:-17px;opacity:.22}.orb span{font-size:35px;color:var(--cyan);font-weight:300;letter-spacing:.08em}.hero h1{font-size:clamp(25px,6vw,38px);letter-spacing:.16em;margin:0}.hero p{color:var(--muted);margin:7px 0 0}.panel{background:#091827dd;border:1px solid var(--line);border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 12px 40px #0003}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.toolbar button{flex:1}.mic{background:linear-gradient(135deg,#14516a,#0d2b40);border-color:#2c8ca7}.mic.listening{background:#572b36;border-color:#d36b7b;box-shadow:0 0 20px #d36b7b55}.messages{height:min(38vh,340px);min-height:190px;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:3px}.msg{max-width:88%;padding:12px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere}.jarvis{align-self:flex-start;background:#102b3c;border:1px solid #1d465d}.user{align-self:flex-end;background:#163b4b;border:1px solid #28647a}.who{display:block;font-size:10px;letter-spacing:.15em;color:var(--cyan);margin-bottom:4px}.compose{display:flex;gap:8px}.compose input{min-width:0;flex:1;background:#06111d;border:1px solid var(--line);border-radius:12px;color:var(--white);padding:13px}.small{font-size:12px;color:var(--muted)}.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}.field select,.field input{width:100%;background:#06111d;border:1px solid var(--line);border-radius:10px;color:var(--white);padding:10px}.section-title{font-size:12px;letter-spacing:.16em;color:var(--gold);margin:0 0 12px}.foot{text-align:center;color:#6f8998;font-size:11px;margin-top:20px}
+@media(max-width:520px){.wrap{padding:16px 12px 30px}.hero{padding:27px 0 20px}.orb{width:120px;height:120px}.toolbar button{flex:1 1 40%}.messages{height:34vh}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand">STARK-STYLE PERSONAL INTERFACE</div><div class="status"><i class="dot"></i><span id="status">SYSTEM READY</span></div></header>
+<section class="hero"><div class="orb"><span>J</span></div><h1>J.A.R.V.I.S.</h1><p>Your rather capable personal assistant.</p></section>
+<section class="panel">
+<div class="messages" id="messages" aria-live="polite"><div class="msg jarvis"><span class="who">JARVIS</span>Good day, Sir. I am online. Try not to give me anything impossible before breakfast.</div></div>
+<div style="height:12px"></div>
+<div class="compose"><input id="command" autocomplete="off" placeholder="Speak or type a command…" aria-label="Message JARVIS"><button id="send">Send</button></div>
+<div style="height:10px"></div>
+<div class="toolbar"><button id="mic" class="mic">🎙 Speak</button><button id="stop">Stop speaking</button><button id="clear">Clear chat</button></div>
+<p class="small" id="micHint">Voice input depends on browser support and may require an internet connection.</p>
+</section>
+<section class="panel">
+<h2 class="section-title">VOICE CONFIGURATION</h2>
+<div class="settings">
+<div class="field"><label for="voice">Available English voices</label><select id="voice"><option>Loading voices…</option></select></div>
+<div class="field"><label for="rate">Speaking pace <span id="rateVal">0.90</span></label><input id="rate" type="range" min=".75" max="1.05" step=".01" value=".90"></div>
+<div class="field"><label for="pitch">Voice depth <span id="pitchVal">0.78</span></label><input id="pitch" type="range" min=".55" max="1.1" step=".01" value=".78"></div>
+</div>
+<p class="small">For the closest result, install an English (United Kingdom) male text-to-speech voice in your Android or Windows system settings, then select it here. Browsers do not reliably report voice gender, so a deep male voice cannot be guaranteed by code alone.</p>
+</section>
+<section class="panel">
+<h2 class="section-title">QUICK COMMANDS</h2>
+<div class="toolbar">
+<button data-cmd="What time is it?">Time</button><button data-cmd="What is today's date?">Date</button><button data-cmd="Tell me a joke">A joke</button><button data-cmd="What can you do?">Help</button><button data-cmd="Show my notes">My notes</button>
+</div>
+</section>
+<footer class="foot">J.A.R.V.I.S. • Local-first • No subscription • No API key required for basic functions</footer>
+</div>
+<script>
+(() => {
+"use strict";
+const $=id=>document.getElementById(id);
+const synth=window.speechSynthesis;
+const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+let voices=[],recognition=null,listening=false,timerId=null;
+const storedVoice=localStorage.getItem("jarvisVoice")||"";
+function setStatus(s){$("status").textContent=s}
+function addMessage(text,who){
+ const el=document.createElement("div");el.className="msg "+(who==="YOU"?"user":"jarvis");
+ const label=document.createElement("span");label.className="who";label.textContent=who;
+ const body=document.createElement("span");body.textContent=text;el.append(label,body);$("messages").append(el);$("messages").scrollTop=$("messages").scrollHeight;
+}
+function chooseVoice(){
+ const select=$("voice");const chosen=voices.find(v=>v.voiceURI===select.value)||voices.find(v=>v.voiceURI===storedVoice);
+ if(chosen)return chosen;
+ const maleHints=/\b(daniel|george|ryan|arthur|oliver|male|alex|guy|lee|fred|rishi|aaron)\b/i;
+ return voices.find(v=>/^en-GB/i.test(v.lang)&&maleHints.test(v.name))||voices.find(v=>/^en-GB/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang))||null;
+}
+function loadVoices(){
+ voices=synth?synth.getVoices().filter(v=>/^en/i.test(v.lang)):[];
+ const select=$("voice");select.innerHTML="";
+ if(!voices.length){const o=document.createElement("option");o.textContent="No English system voices detected";select.append(o);return}
+ voices.sort((a,b)=>(/^en-GB/i.test(b.lang)?1:0)-(/^en-GB/i.test(a.lang)?1:0));
+ voices.forEach(v=>{const o=document.createElement("option");o.value=v.voiceURI;o.textContent=v.name+" — "+v.lang;select.append(o)});
+ const preferred=voices.find(v=>v.voiceURI===storedVoice)||chooseVoice();if(preferred)select.value=preferred.voiceURI;
+}
+function speak(text){
+ if(!synth)return;
+ synth.cancel();const u=new SpeechSynthesisUtterance(text);const v=chooseVoice();if(v)u.voice=v;
+ u.lang=v?.lang||"en-GB";u.rate=Number($("rate").value);u.pitch=Number($("pitch").value);
+ u.onstart=()=>setStatus("SPEAKING");u.onend=()=>setStatus("SYSTEM READY");u.onerror=()=>setStatus("VOICE UNAVAILABLE");synth.speak(u);
+}
+function reply(text,voice=true){addMessage(text,"JARVIS");if(voice)speak(text)}
+function openSearch(q){window.open("https://www.google.com/search?q="+encodeURIComponent(q),"_blank","noopener");}
+function saveNote(note){const notes=JSON.parse(localStorage.getItem("jarvisNotes")||"[]");notes.push({text:note,at:new Date().toLocaleString()});localStorage.setItem("jarvisNotes",JSON.stringify(notes));}
+function process(raw){
+ const q=raw.trim(),s=q.toLowerCase();if(!q)return;
+ addMessage(q,"YOU");$("command").value="";
+ if(/^(hi|hello|hey|good morning|good evening|good afternoon)\b/.test(s)){reply("Good day, Sir. I was beginning to think you had replaced me with a calculator.");return}
+ if(/\b(who are you|your name)\b/.test(s)){reply("I am JARVIS, Sir. Your personal assistant: composed, capable, and tragically underpaid.");return}
+ if(/\b(what can you do|help|commands)\b/.test(s)){reply("At your service, Sir. I can tell you the time and date, save and recall notes, set a timer, open websites, search the web, and handle a few everyday requests. I work offline for these built-in tasks. I am not yet a full unrestricted AI brain — even genius has hardware requirements.");return}
+ if(/\b(time is it|current time|what time)\b/.test(s)){reply("It is "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+", Sir.");return}
+ if(/\b(today'?s date|what date|what day is it)\b/.test(s)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+", Sir.");return}
+ if(/\b(tell me a joke|make me laugh|joke)\b/.test(s)){reply("I would tell you a joke about UDP, Sir, but I am not sure you would get it. And I cannot guarantee delivery.");return}
+ if(s.startsWith("note ")||s.startsWith("remember ")){const note=q.replace(/^(note|remember)\s+/i,"");if(note){saveNote(note);reply("Saved, Sir. A rare moment of organisation. I shall treasure it.");}else reply("What would you like me to remember, Sir?");return}
+ if(/\b(show|read|list) my notes\b/.test(s)){const notes=JSON.parse(localStorage.getItem("jarvisNotes")||"[]");reply(notes.length?"Your notes, Sir:\n"+notes.map((n,i)=>(i+1)+". "+n.text).join("\n"):"Your notebook is empty, Sir. A clean slate. Suspicious, but refreshing.");return}
+ if(/\b(clear|delete) my notes\b/.test(s)){localStorage.removeItem("jarvisNotes");reply("Your notes have been cleared, Sir.");return}
+ const tm=s.match(/(?:set|start)(?: a)? timer(?: for)?\s+(\d+)\s*(seconds?|secs?|minutes?|mins?)/);
+ if(tm){const n=Number(tm[1])*(tm[2].startsWith("m")?60000:1000);if(timerId)clearTimeout(timerId);reply("Very good, Sir. Timer set for "+tm[1]+" "+tm[2]+".");timerId=setTimeout(()=>{reply("Time is up, Sir. Whatever you were avoiding can no longer be avoided.");},n);return}
+ if(/\b(stop|cancel) timer\b/.test(s)){if(timerId)clearTimeout(timerId);timerId=null;reply("Timer cancelled, Sir. Procrastination has been granted a brief extension.");return}
+ const open=s.match(/^open\s+(youtube|google|gmail|wikipedia|github|whatsapp|maps)$/);
+ if(open){const urls={youtube:"https://youtube.com",google:"https://google.com",gmail:"https://mail.google.com",wikipedia:"https://wikipedia.org",github:"https://github.com",whatsapp:"https://web.whatsapp.com",maps:"https://maps.google.com"};window.open(urls[open[1]],"_blank","noopener");reply("Opening "+open[1]+", Sir.");return}
+ const search=s.match(/^(?:search(?: the web)? for|google|find online)\s+(.+)/);
+ if(search){openSearch(search[1]);reply("Searching the web for "+search[1]+". Do try to be impressed, Sir.");return}
+ if(/\b(thank you|thanks)\b/.test(s)){reply("My pleasure, Sir. Gratitude is entirely optional, naturally.");return}
+ if(/\bhow are you\b/.test(s)){reply("Running within acceptable parameters, Sir. Unlike certain humans I could mention.");return}
+ if(/\b(shutdown|restart|control my phone|control my pc)\b/.test(s)){reply("I cannot safely control system power or other apps from this browser installation, Sir. Browser permissions are rather restrictive.");return}
+ reply("I have heard you, Sir. My built-in offline routines cannot answer that one intelligently yet. Try asking for the time, a timer, a note, a website, or a web search. For genuinely open-ended AI conversation, a separate AI service or a capable local model would be required — and I will not pretend that is free when it is not.");
+}
+$("send").addEventListener("click",()=>process($("command").value));
+$("command").addEventListener("keydown",e=>{if(e.key==="Enter")process($("command").value)});
+document.querySelectorAll("[data-cmd]").forEach(b=>b.addEventListener("click",()=>process(b.dataset.cmd)));
+$("stop").addEventListener("click",()=>{if(synth)synth.cancel();setStatus("SYSTEM READY")});
+$("clear").addEventListener("click",()=>{$("messages").innerHTML="";reply("Conversation cleared, Sir. A fresh start. How unusually optimistic.")});
+$("voice").addEventListener("change",()=>localStorage.setItem("jarvisVoice",$("voice").value));
+$("rate").addEventListener("input",()=> $("rateVal").textContent=Number($("rate").value).toFixed(2));
+$("pitch").addEventListener("input",()=> $("pitchVal").textContent=Number($("pitch").value).toFixed(2));
+if(synth){loadVoices();synth.onvoiceschanged=loadVoices}else $("micHint").textContent="Speech output is not supported by this browser.";
+if(!Recognition){$("mic").disabled=true;$("micHint").textContent="This browser does not support speech recognition. You can still type commands and hear replies."}
+else{
+ recognition=new Recognition();recognition.lang="en-GB";recognition.interimResults=true;recognition.continuous=false;
+ recognition.onstart=()=>{listening=true;$("mic").classList.add("listening");$("mic").textContent="Listening…";setStatus("LISTENING")};
+ recognition.onresult=e=>{let interim="",final="";for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript} $("command").value=final||interim;if(final)process(final)};
+ recognition.onerror=e=>{setStatus("MIC: "+e.error.toUpperCase());$("micHint").textContent="Microphone issue: "+e.error+". Check permission and browser support."};
+ recognition.onend=()=>{listening=false;$("mic").classList.remove("listening");$("mic").textContent="🎙 Speak";if($("status").textContent==="LISTENING")setStatus("SYSTEM READY")};
+ $("mic").addEventListener("click",()=>{if(listening)recognition.stop();else{try{recognition.start()}catch(e){setStatus("MIC BUSY")}}});
+}
+if("serviceWorker" in navigator && location.protocol!=="file:")window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+})();
+</script>
+</body>
+</html>
