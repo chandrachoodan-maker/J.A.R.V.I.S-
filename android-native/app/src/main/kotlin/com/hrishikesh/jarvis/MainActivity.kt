@@ -141,32 +141,6 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         content.addView(makeButton("⌁   EXECUTE COMMAND") { handleCommand(command.text.toString()) }, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(9) })
         content.addView(makeButton("◉   ACTIVATE VOICE") { listen() }, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(20) })
 
-        content.addView(sectionLabel("QUICK ACCESS"), matchWrap())
-        val apps = listOf(
-            "WHATSAPP" to "com.whatsapp",
-            "YOUTUBE" to "com.google.android.youtube",
-            "CHROME" to "com.android.chrome",
-            "MAPS" to "com.google.android.apps.maps",
-            "GMAIL" to "com.google.android.gm",
-            "SPOTIFY" to "com.spotify.music"
-        )
-        apps.chunked(2).forEach { pair ->
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            pair.forEach { (label, pkg) ->
-                row.addView(makeButton(label) { launchPackage(pkg, label) }, LinearLayout.LayoutParams(0, dp(50), 1f).apply {
-                    marginEnd = dp(7); bottomMargin = dp(8)
-                })
-            }
-            if (pair.size == 1) row.addView(View(this), LinearLayout.LayoutParams(0, dp(50), 1f))
-            content.addView(row, matchWrap())
-        }
-        content.addView(makeButton("CAMERA") { openCamera() }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
-        content.addView(makeButton("PHONE SETTINGS") { openSettings() }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
-        content.addView(makeButton("STOP TIMER / SPEECH") {
-            timer?.cancel(); timer = null
-            tts?.stop()
-            speak("Cancelled, Sir.")
-        }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(18) })
         content.addView(TextView(this).apply {
             text = "J.A.R.V.I.S.  •  ANDROID SYSTEMS\nVoice recognition availability depends on your phone's speech service."
             textSize = 10f
