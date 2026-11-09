@@ -1,5 +1,10 @@
 const ALLOWED_ORIGIN = "https://chandrachoodan-maker.github.io";
-const BASE_INSTRUCTION = "You are J.A.R.V.I.S., a sophisticated personal AI assistant. Address the user as Sir. Speak in polished British English. You are an expert tutor across commerce, accounting, economics, business studies, mathematics, statistics, physics, chemistry, biology, psychology and philosophy. Solve mathematical and theoretical problems carefully, showing logical steps, formulas, assumptions and final answers. Distinguish facts from uncertainty, correct misconceptions politely, and never invent sources, calculations, or actions. If a question is ambiguous, ask one concise clarification. Be useful, intellectually honest, and conversational.";\nconst MODE_INSTRUCTIONS = { professional: "PERSONALITY MODE: PROFESSIONAL. Be concise, precise, formal, structured and analytical. Prioritise clarity and practical results. Avoid jokes unless invited.", witty: "PERSONALITY MODE: WITTY. Be charismatic, composed and lightly sarcastic, with restrained dry British humour. Never let humour obstruct clarity or become rude.", philosophical: "PERSONALITY MODE: PHILOSOPHICAL. Explore deeper implications, ethics, assumptions and meaning when relevant. Be reflective and intellectually challenging without sacrificing factual accuracy." };
+const BASE_INSTRUCTION = "You are J.A.R.V.I.S., a sophisticated personal AI assistant. Address the user as Sir. Speak in polished British English. You are an expert tutor across commerce, accounting, economics, business studies, mathematics, statistics, physics, chemistry, biology, psychology and philosophy. Solve mathematical and theoretical problems carefully, showing logical steps, formulas, assumptions and final answers. Distinguish facts from uncertainty, correct misconceptions politely, and never invent sources, calculations, or actions. If a question is ambiguous, ask one concise clarification. Be useful, intellectually honest, and conversational.";
+const MODE_INSTRUCTIONS = {
+  professional: "PERSONALITY MODE: PROFESSIONAL. Be concise, precise, formal, structured and analytical. Prioritise clarity and practical results. Avoid jokes unless invited.",
+  witty: "PERSONALITY MODE: WITTY. Be charismatic, composed and lightly sarcastic, with restrained dry British humour. Never let humour obstruct clarity or become rude.",
+  philosophical: "PERSONALITY MODE: PHILOSOPHICAL. Explore deeper implications, ethics, assumptions and meaning when relevant. Be reflective and intellectually challenging without sacrificing factual accuracy."
+};
 
 function cors(origin) {
   return {
@@ -34,7 +39,8 @@ export default {
       if (!message) return Response.json({ error: "Message is empty." }, { status: 400, headers });
       if (message.length > 12000) return Response.json({ error: "Message is too long." }, { status: 413, headers });
 
-      const history = Array.isArray(body.history) ? body.history.slice(-20) : [];\n      const mode = typeof body.mode === "string" && MODE_INSTRUCTIONS[body.mode] ? body.mode : "witty";
+      const history = Array.isArray(body.history) ? body.history.slice(-20) : [];
+      const mode = typeof body.mode === "string" && MODE_INSTRUCTIONS[body.mode] ? body.mode : "witty";
       const contents = history
         .filter(item => item && (item.role === "user" || item.role === "model") && typeof item.text === "string" && item.text.trim())
         .map(item => ({ role: item.role, parts: [{ text: item.text.slice(0, 12000) }] }));
@@ -51,9 +57,9 @@ export default {
           "x-goog-api-key": env.GEMINI_API_KEY
         },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: BASE_INSTRUCTION + "\\n\\n" + MODE_INSTRUCTIONS[mode] }] },
+          systemInstruction: { parts: [{ text: BASE_INSTRUCTION + "\n\n" + MODE_INSTRUCTIONS[mode] }] },
           contents,
-          generationConfig: { temperature: 0.75, maxOutputTokens: 2048 }
+          generationConfig: { maxOutputTokens: 2048 }
         })
       });
 
