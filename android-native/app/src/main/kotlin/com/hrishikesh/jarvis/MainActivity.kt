@@ -180,9 +180,22 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
 
     override fun onInit(result: Int) {
         if (result == TextToSpeech.SUCCESS) {
-            tts?.language = Locale.UK
-            tts?.setSpeechRate(0.90f)
-            tts?.setPitch(0.82f)
+            val engine = tts ?: return
+            val available = engine.voices.orEmpty()
+            val maleHints = Regex("(?i)\\b(male|daniel|george|arthur|oliver|ryan|guy|lee|fred|rishi)\\b")
+            val preferred = available.firstOrNull {
+                it.locale.language == "en" &&
+                    it.locale.country.equals("GB", ignoreCase = true) &&
+                    maleHints.containsMatchIn(it.name)
+            } ?: available.firstOrNull {
+                it.locale.language == "en" && maleHints.containsMatchIn(it.name)
+            } ?: available.firstOrNull {
+                it.locale.language == "en" && it.locale.country.equals("GB", ignoreCase = true)
+            }
+            if (preferred != null) engine.voice = preferred
+            else engine.language = Locale.UK
+            engine.setSpeechRate(0.88f)
+            engine.setPitch(0.76f)
         }
     }
 
