@@ -217,6 +217,13 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
     </div>
 
     <div class="field">
+      <label for="voiceSel">JARVIS voice</label>
+      <select id="voiceSel"></select>
+      <div class="line"><button class="btn" id="voiceTest" type="button">TEST VOICE</button></div>
+      <p class="note">Pick a British male voice if your phone has one. A deep, slow delivery is set automatically. More voices can be added in your phone's text-to-speech settings.</p>
+    </div>
+
+    <div class="field">
       <span class="lbl">Offline brain</span>
       <p class="note" id="brainNote">A small AI model that runs on this phone with no internet. About 0.7 GB, downloaded once over Wi-Fi.</p>
       <div class="meter" aria-hidden="true"><i id="meter"></i></div>
@@ -513,17 +520,19 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
   function pickVoice(){
     if (!synth) return null;
     var v = synth.getVoices() || [];
-    return v.find(function(x){ return /en-GB/i.test(x.lang) && /male|daniel|arthur|oliver/i.test(x.name); }) ||
-           v.find(function(x){ return /en-GB/i.test(x.lang); }) ||
-           v.find(function(x){ return /^en/i.test(x.lang); }) || null;
+    var saved = store.get("jv_voice_uri", "");
+    if (saved) { var s = v.find(function(x){ return x.voiceURI === saved; }); if (s) return s; }
+    var gb = v.filter(function(x){ return /en[-_]GB/i.test(x.lang); });
+    return gb.find(function(x){ var n = x.name + " " + x.voiceURI; return /gbb|gbd|rjs|male|daniel|oliver|arthur|george|ryan|thomas/i.test(n) && !/female/i.test(n); }) ||
+           gb[0] || v.find(function(x){ return /^en/i.test(x.lang); }) || null;
   }
-  function speak(text, then){
-    if (!voiceOn || !synth || !text) { if (then) then(); return; }
+  function speak(text, then, force){
+    if ((!voiceOn && !force) || !synth || !text) { if (then) then(); return; }
     try {
       synth.cancel();
       var u = new SpeechSynthesisUtterance(text);
       var v = pickVoice(); if (v) u.voice = v;
-      u.rate = 0.96; u.pitch = 0.8;
+      u.rate = 0.92; u.pitch = 0.5;
       u.onstart = function(){ setState("speaking"); setStatus("Speaking"); };
       u.onend = u.onerror = function(){ if (!busy && !listening) idle(); if (then) then(); };
       synth.speak(u);
@@ -732,7 +741,20 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
     pill("pKey", store.get("jv_key", "") ? "Claude key: saved" : "Claude key: none", store.get("jv_key", "") ? "ok" : "bad");
     $("modeSel").value = store.get("jv_mode", "auto");
     $("dlBtn").textContent = modelReady() ? "REINSTALL OFFLINE BRAIN" : "DOWNLOAD OFFLINE BRAIN";
+    fillVoices();
   }
+  function fillVoices(){
+    var sel = $("voiceSel");
+    if (!synth) { sel.parentNode.hidden = true; return; }
+    var vs = (synth.getVoices() || []).filter(function(x){ return /^en/i.test(x.lang); });
+    sel.textContent = "";
+    var auto = document.createElement("option"); auto.value = ""; auto.textContent = "Automatic (British male if available)"; sel.appendChild(auto);
+    vs.forEach(function(x){ var o = document.createElement("option"); o.value = x.voiceURI; o.textContent = x.name + " (" + x.lang + ")"; sel.appendChild(o); });
+    sel.value = store.get("jv_voice_uri", "");
+  }
+  $("voiceSel").addEventListener("change", function(){ store.set("jv_voice_uri", $("voiceSel").value); });
+  $("voiceTest").addEventListener("click", function(){ speak("Good day. All systems are running. How may I be of service?", null, true); });
+  if (synth) { try { synth.onvoiceschanged = function(){ if (!$("settings").hidden) fillVoices(); }; } catch(e){} }
   $("keySave").addEventListener("click", function(){
     var v = $("keyIn").value.trim();
     if (!v) return;

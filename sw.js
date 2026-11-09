@@ -1,5 +1,5 @@
 /* JARVIS service worker: keeps the app shell, fonts and the offline-AI library available with no internet. */
-var CACHE = "jarvis-v1";
+var CACHE = "jarvis-v2";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest"];
 var REMOTE_OK = ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net"];
 
