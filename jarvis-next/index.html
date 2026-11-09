@@ -60,7 +60,9 @@ async function askGemini(question){
  }
  try{
   setStatus("GEMINI THINKING");setOrbState("thinking");
-  const history=[...$("messages").querySelectorAll(".msg")].map(el=>({role:el.classList.contains("user")?"user":"model",text:el.innerText.replace(/^YOU\\s*/,"").replace(/^JARVIS\\s*/,"").trim()})).filter(x=>x.text).slice(-20);
+  const historyRaw=[...$("messages").querySelectorAll(".msg")].map(el=>({role:el.classList.contains("user")?"user":"model",text:el.innerText.replace(/^YOU\\s*/,"").replace(/^JARVIS\\s*/,"").trim()})).filter(x=>x.text);
+  const firstUser=historyRaw.findIndex(item=>item.role==="user");
+  const history=firstUser<0?[]:historyRaw.slice(firstUser).slice(-20);
   const response=await fetch(JARVIS_API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:question,history,mode:$("mode").value})});
   const data=await response.json();
   if(!response.ok)throw new Error(data.error||("HTTP "+response.status));
