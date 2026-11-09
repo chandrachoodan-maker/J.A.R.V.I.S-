@@ -46,66 +46,102 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun buildScreen() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(22, 28, 22, 18)
-            setBackgroundColor(bg)
+            setPadding(dp(20), dp(24), dp(20), dp(18))
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(3, 9, 20), Color.rgb(7, 20, 36), Color.rgb(3, 9, 20))
+            )
         }
-        val scroll = ScrollView(this)
+        val scroll = ScrollView(this).apply { clipToPadding = false }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
         }
+
         content.addView(TextView(this).apply {
             text = "J.A.R.V.I.S."
-            textSize = 30f
-            letterSpacing = 0.18f
-            setTextColor(cyan)
+            textSize = 29f
+            letterSpacing = 0.24f
+            typeface = android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
+            setTextColor(Color.rgb(117, 229, 255))
             gravity = Gravity.CENTER
         }, matchWrap())
         content.addView(TextView(this).apply {
-            text = "PERSONAL ASSISTANT  ·  ANDROID EDITION"
-            textSize = 10f
-            letterSpacing = 0.12f
-            setTextColor(Color.LTGRAY)
-            gravity = Gravity.CENTER
-            setPadding(0, 8, 0, 24)
-        }, matchWrap())
-        status = TextView(this).apply {
-            text = "SYSTEM READY"
-            textSize = 12f
-            letterSpacing = 0.12f
-            setTextColor(cyan)
-            gravity = Gravity.CENTER
-            setPadding(12, 16, 12, 16)
-            setBackgroundColor(panel)
-        }
-        content.addView(status, matchWrap())
-        transcript = TextView(this).apply {
-            text = "Good day, Sir. JARVIS is ready."
-            textSize = 17f
-            setTextColor(Color.WHITE)
-            setPadding(4, 24, 4, 24)
-            gravity = Gravity.CENTER
-        }
-        content.addView(transcript, matchWrap())
-        command = EditText(this).apply {
-            hint = "Give me a command, Sir…"
-            setHintTextColor(Color.GRAY)
-            setTextColor(Color.WHITE)
-            textSize = 16f
-            setSingleLine(true)
-            setPadding(16, 14, 16, 14)
-            setBackgroundColor(panel)
-        }
-        content.addView(command, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 12 })
-        content.addView(makeButton("EXECUTE COMMAND") { handleCommand(command.text.toString()) }, matchWrap())
-        content.addView(makeButton("SPEAK TO JARVIS") { listen() }, matchWrap())
-        content.addView(TextView(this).apply {
-            text = "QUICK ACCESS"
-            setTextColor(cyan)
-            textSize = 11f
+            text = "JUST A RATHER VERY INTELLIGENT SYSTEM"
+            textSize = 9f
             letterSpacing = 0.16f
-            setPadding(0, 26, 0, 12)
+            setTextColor(Color.rgb(112, 150, 174))
+            gravity = Gravity.CENTER
+            setPadding(0, dp(5), 0, dp(22))
         }, matchWrap())
+
+        val orb = TextView(this).apply {
+            text = "◉"
+            textSize = 74f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(93, 220, 255))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(Color.rgb(8, 29, 48))
+                setStroke(dp(2), Color.rgb(43, 139, 178))
+            }
+            elevation = dp(8).toFloat()
+        }
+        val orbWrap = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(16))
+            addView(orb, LinearLayout.LayoutParams(dp(142), dp(142)))
+        }
+        content.addView(orbWrap, matchWrap())
+
+        status = TextView(this).apply {
+            text = "●  SYSTEM ONLINE"
+            textSize = 11f
+            letterSpacing = 0.14f
+            setTextColor(Color.rgb(103, 231, 205))
+            gravity = Gravity.CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = roundedPanel(Color.rgb(9, 35, 48), Color.rgb(31, 104, 125), 24)
+        }
+        content.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
+
+        val assistantCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(16), dp(18), dp(16))
+            background = roundedPanel(Color.rgb(10, 24, 41), Color.rgb(26, 65, 91), 18)
+        }
+        assistantCard.addView(TextView(this).apply {
+            text = "PERSONAL ASSISTANT"
+            textSize = 9f
+            letterSpacing = 0.18f
+            setTextColor(Color.rgb(92, 190, 220))
+        }, matchWrap())
+        transcript = TextView(this).apply {
+            text = "Good day, Sir.\nHow may I assist you?"
+            textSize = 17f
+            typeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
+            setTextColor(Color.WHITE)
+            setPadding(0, dp(10), 0, dp(2))
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        assistantCard.addView(transcript, matchWrap())
+        content.addView(assistantCard, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(18) })
+
+        content.addView(sectionLabel("COMMAND CONSOLE"), matchWrap())
+        command = EditText(this).apply {
+            hint = "Type a command, Sir..."
+            setHintTextColor(Color.rgb(111, 139, 158))
+            setTextColor(Color.WHITE)
+            textSize = 15f
+            setSingleLine(true)
+            setPadding(dp(16), dp(13), dp(16), dp(13))
+            background = roundedPanel(Color.rgb(10, 24, 40), Color.rgb(35, 84, 111), 14)
+        }
+        content.addView(command, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        content.addView(makeButton("⌁   EXECUTE COMMAND") { handleCommand(command.text.toString()) }, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(9) })
+        content.addView(makeButton("◉   ACTIVATE VOICE") { listen() }, LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(20) })
+
+        content.addView(sectionLabel("QUICK ACCESS"), matchWrap())
         val apps = listOf(
             "WHATSAPP" to "com.whatsapp",
             "YOUTUBE" to "com.google.android.youtube",
@@ -117,37 +153,56 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         apps.chunked(2).forEach { pair ->
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             pair.forEach { (label, pkg) ->
-                row.addView(makeButton(label) { launchPackage(pkg, label) }, LinearLayout.LayoutParams(0, dp(52), 1f).apply {
-                    marginEnd = dp(6); bottomMargin = dp(8)
+                row.addView(makeButton(label) { launchPackage(pkg, label) }, LinearLayout.LayoutParams(0, dp(50), 1f).apply {
+                    marginEnd = dp(7); bottomMargin = dp(8)
                 })
             }
-            if (pair.size == 1) row.addView(View(this), LinearLayout.LayoutParams(0, dp(52), 1f))
+            if (pair.size == 1) row.addView(View(this), LinearLayout.LayoutParams(0, dp(50), 1f))
             content.addView(row, matchWrap())
         }
-        content.addView(makeButton("CAMERA") { openCamera() }, matchWrap())
-        content.addView(makeButton("PHONE SETTINGS") { openSettings() }, matchWrap())
+        content.addView(makeButton("CAMERA") { openCamera() }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
+        content.addView(makeButton("PHONE SETTINGS") { openSettings() }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(8) })
         content.addView(makeButton("STOP TIMER / SPEECH") {
             timer?.cancel(); timer = null
             tts?.stop()
             speak("Cancelled, Sir.")
-        }, matchWrap())
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { bottomMargin = dp(18) })
         content.addView(TextView(this).apply {
-            text = "Voice recognition uses your phone's speech service. Some commands require internet. JARVIS only opens apps and settings you explicitly request; it does not silently control other apps."
-            textSize = 11f
-            setTextColor(Color.LTGRAY)
-            setPadding(4, 22, 4, 8)
+            text = "J.A.R.V.I.S.  •  ANDROID SYSTEMS\nVoice recognition availability depends on your phone's speech service."
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(93, 125, 148))
+            setPadding(dp(8), dp(12), dp(8), dp(14))
         }, matchWrap())
+
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         setContentView(root)
     }
 
+    private fun roundedPanel(fill: Int, stroke: Int, radius: Int): android.graphics.drawable.GradientDrawable =
+        android.graphics.drawable.GradientDrawable().apply {
+            setColor(fill)
+            cornerRadius = dp(radius).toFloat()
+            setStroke(dp(1), stroke)
+        }
+
+    private fun sectionLabel(label: String) = TextView(this).apply {
+        text = label
+        textSize = 10f
+        letterSpacing = 0.18f
+        setTextColor(Color.rgb(91, 190, 221))
+        setPadding(dp(2), 0, 0, dp(10))
+    }
+
     private fun makeButton(label: String, action: () -> Unit) = Button(this).apply {
         text = label
         isAllCaps = false
-        textSize = 13f
-        setTextColor(Color.WHITE)
-        setBackgroundColor(Color.rgb(20, 53, 72))
+        textSize = 12f
+        letterSpacing = 0.08f
+        setTextColor(Color.rgb(220, 246, 255))
+        background = roundedPanel(Color.rgb(12, 39, 59), Color.rgb(37, 112, 145), 13)
+        stateListAnimator = null
         setOnClickListener { action() }
     }
 
