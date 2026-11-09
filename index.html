@@ -204,7 +204,7 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
         <button class="btn" id="keySave" type="button">SAVE KEY</button>
         <button class="btn alt" id="keyClear" type="button">REMOVE</button>
       </div>
-      <p class="note">The key stays on this phone and goes only to Anthropic. Use a key with a low spend limit.</p>
+      <p class="note">The key is stored in this browser and sent to Anthropic for requests. API usage is billed by Anthropic; there are no free credits included. For zero-cost use, leave this blank and use the offline brain if your device supports it.</p>
     </div>
 
     <div class="field">
@@ -220,7 +220,7 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
       <label for="voiceSel">JARVIS voice</label>
       <select id="voiceSel"></select>
       <div class="line"><button class="btn" id="voiceTest" type="button">TEST VOICE</button></div>
-      <p class="note">Pick a British male voice if your phone has one. A deep, slow delivery is set automatically. More voices can be added in your phone's text-to-speech settings.</p>
+      <p class="note">JARVIS now prefers English male voices, with British voices first, and ignores a previously saved female voice. A slower, lower-pitched delivery is used. Available voices depend on your device; install an English male voice in Android or Windows text-to-speech settings if none appears.</p>
     </div>
 
     <div class="field">
@@ -517,23 +517,45 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
   }
 
   /* ---------- speech out ---------- */
+  function voiceGender(v){
+    var n = ((v && v.name) || "") + " " + ((v && v.voiceURI) || "");
+    n = n.toLowerCase();
+    if (/female|zira|susan|hazel|catherine|samantha|victoria|aria|jenny|sonia|libby|amy|emma|olivia|ava|joanna|karen|moira|tessa|fiona|siri.*female/.test(n)) return "female";
+    if (/male|daniel|oliver|arthur|george|ryan|thomas|david|james|guy|mark|fred|rishi|andrew|brian|aaron|john|en[-_]gb[-_](?:standard|wavenet|neural2)[-_]?[b-d]|en[-_]gb[-_]x[-_]gb[b-d]/.test(n)) return "male";
+    return "unknown";
+  }
+  function isBritish(v){ return /en[-_]GB/i.test(v.lang || ""); }
   function pickVoice(){
     if (!synth) return null;
     var v = synth.getVoices() || [];
     var saved = store.get("jv_voice_uri", "");
-    if (saved) { var s = v.find(function(x){ return x.voiceURI === saved; }); if (s) return s; }
-    var gb = v.filter(function(x){ return /en[-_]GB/i.test(x.lang); });
-    return gb.find(function(x){ var n = x.name + " " + x.voiceURI; return /gbb|gbd|rjs|male|daniel|oliver|arthur|george|ryan|thomas/i.test(n) && !/female/i.test(n); }) ||
-           gb[0] || v.find(function(x){ return /^en/i.test(x.lang); }) || null;
+    var manual = store.get("jv_voice_manual", false);
+    if (saved && manual) {
+      var chosen = v.find(function(x){ return x.voiceURI === saved; });
+      if (chosen && voiceGender(chosen) !== "female") return chosen;
+      if (chosen && voiceGender(chosen) === "female") { store.del("jv_voice_uri"); store.set("jv_voice_manual", false); }
+    }
+    var english = v.filter(function(x){ return /^en/i.test(x.lang || ""); });
+    var male = english.filter(function(x){ return voiceGender(x) === "male"; });
+    return male.find(isBritish) || male[0] ||
+      english.filter(function(x){ return voiceGender(x) === "unknown"; }).find(isBritish) ||
+      english.find(function(x){ return voiceGender(x) === "unknown"; }) || null;
   }
   function speak(text, then, force){
     if ((!voiceOn && !force) || !synth || !text) { if (then) then(); return; }
     try {
       synth.cancel();
+      var v = pickVoice();
+      if (!v) {
+        setStatus("No English voice available — install one in device settings");
+        addMsg("sys", "I couldn't find an English voice on this device. Install an English male text-to-speech voice in your device settings, then reopen JARVIS settings.");
+        if (then) then();
+        return;
+      }
       var u = new SpeechSynthesisUtterance(text);
-      var v = pickVoice(); if (v) u.voice = v;
-      u.rate = 0.92; u.pitch = 0.5;
-      u.onstart = function(){ setState("speaking"); setStatus("Speaking"); };
+      u.voice = v;
+      u.rate = 0.88; u.pitch = 0.72;
+      u.onstart = function(){ setState("speaking"); setStatus("Speaking · " + v.name); };
       u.onend = u.onerror = function(){ if (!busy && !listening) idle(); if (then) then(); };
       synth.speak(u);
     } catch(e){ if (then) then(); }
@@ -557,11 +579,16 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
       recog = new SR();
       recog.lang = navigator.language || "en-US";
       recog.interimResults = true; recog.continuous = false;
-      var finalText = "";
+      var finalText = "", interimText = "";
       recog.onstart = function(){ listening = true; $("micBtn").setAttribute("aria-pressed", "true"); setState("listening"); setStatus("Listening"); };
       recog.onresult = function(ev){
-        var txt = ""; for (var k = 0; k < ev.results.length; k++) txt += ev.results[k][0].transcript;
-        finalText = txt; $("box").value = txt; grow();
+        finalText = ""; interimText = "";
+        for (var k = 0; k < ev.results.length; k++) {
+          var part = ev.results[k][0].transcript;
+          if (ev.results[k].isFinal) finalText += part;
+          else interimText += part;
+        }
+        $("box").value = (finalText + " " + interimText).trim(); grow();
       };
       recog.onerror = function(ev){
         if (ev.error === "not-allowed" || ev.error === "service-not-allowed") micGone("Microphone permission was denied. Allow it in your browser's site settings, or type instead.");
@@ -570,7 +597,7 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
       recog.onend = function(){
         var was = listening; listening = false; $("micBtn").setAttribute("aria-pressed", "false");
         if (was && finalText.trim()) send(finalText.trim());
-        else { if (!busy) idle(); }
+        else { if (!busy && interimText.trim()) addMsg("sys", "I only caught part of that. Please try again or type your message."); if (!busy) idle(); }
       };
       recog.start();
     } catch(e){ micGone("Voice input isn't available in this browser. Type instead."); }
@@ -628,7 +655,9 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
         body: JSON.stringify({ model: CLOUD_MODEL, max_tokens: 500, system: systemPrompt(), messages: turns })
       });
     } catch(e){ if (e && e.name === "AbortError") throw { code: "cancelled" }; throw { code: "network" }; }
-    if (!res.ok) { throw { code: res.status === 401 ? "badkey" : res.status === 429 ? "limit" : "http" }; }
+    if (!res.ok) {
+      throw { code: res.status === 401 ? "badkey" : res.status === 403 ? "denied" : res.status === 429 ? "limit" : res.status === 529 ? "overloaded" : res.status === 400 ? "request" : "http" };
+    }
     var data = await res.json();
     var text = (data.content || []).filter(function(b){ return b.type === "text"; }).map(function(b){ return b.text; }).join("").trim();
     if (!text) throw { code: "empty" };
@@ -656,10 +685,13 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
   }
 
   var ERR = {
-    nokey: "No Claude key is saved. Open SET and add one, or switch to the offline brain.",
-    badkey: "Anthropic rejected the API key. Check it in SET.",
-    limit: "The Anthropic account hit a rate or spend limit. Try again shortly.",
-    http: "Claude could not be reached just now.",
+    nokey: "No Anthropic API key is saved. For zero-cost use, install the offline brain in SET; Anthropic API usage is billed separately.",
+    badkey: "Anthropic rejected the API key. Check that it is valid in SET.",
+    denied: "This API key or account does not have access to the selected Claude model.",
+    limit: "The Anthropic account hit a rate or spend limit. Check its billing and limits.",
+    overloaded: "Anthropic is temporarily busy. Please try again shortly.",
+    request: "Anthropic rejected the request. Check the key, model access and API settings.",
+    http: "Claude could not be reached just now. Please try again.",
     network: "No connection to Claude.",
     empty: "I came back empty. Try asking another way.",
     nomodel: "The offline brain isn't installed yet. Open SET while on Wi-Fi and download it.",
@@ -746,13 +778,22 @@ input[type=password],input[type=text],select{width:100%;height:40px;padding:0 10
   function fillVoices(){
     var sel = $("voiceSel");
     if (!synth) { sel.parentNode.hidden = true; return; }
-    var vs = (synth.getVoices() || []).filter(function(x){ return /^en/i.test(x.lang); });
+    var vs = (synth.getVoices() || []).filter(function(x){ return /^en/i.test(x.lang || "") && voiceGender(x) !== "female"; });
+    vs.sort(function(a, b){
+      var score = function(x){ return (voiceGender(x) === "male" ? 10 : 0) + (isBritish(x) ? 5 : 0); };
+      return score(b) - score(a);
+    });
     sel.textContent = "";
-    var auto = document.createElement("option"); auto.value = ""; auto.textContent = "Automatic (British male if available)"; sel.appendChild(auto);
-    vs.forEach(function(x){ var o = document.createElement("option"); o.value = x.voiceURI; o.textContent = x.name + " (" + x.lang + ")"; sel.appendChild(o); });
-    sel.value = store.get("jv_voice_uri", "");
+    var auto = document.createElement("option"); auto.value = ""; auto.textContent = "Automatic · British male preferred"; sel.appendChild(auto);
+    vs.forEach(function(x){ var o = document.createElement("option"); o.value = x.voiceURI; o.textContent = (voiceGender(x) === "male" ? "Male · " : "Unclassified · ") + x.name + " (" + x.lang + ")"; sel.appendChild(o); });
+    var saved = store.get("jv_voice_uri", "");
+    if (saved && vs.some(function(x){ return x.voiceURI === saved; }) && store.get("jv_voice_manual", false)) sel.value = saved;
+    else { sel.value = ""; store.del("jv_voice_uri"); store.set("jv_voice_manual", false); }
   }
-  $("voiceSel").addEventListener("change", function(){ store.set("jv_voice_uri", $("voiceSel").value); });
+  $("voiceSel").addEventListener("change", function(){
+    store.set("jv_voice_uri", $("voiceSel").value);
+    store.set("jv_voice_manual", !!$("voiceSel").value);
+  });
   $("voiceTest").addEventListener("click", function(){ speak("Good day. All systems are running. How may I be of service?", null, true); });
   if (synth) { try { synth.onvoiceschanged = function(){ if (!$("settings").hidden) fillVoices(); }; } catch(e){} }
   $("keySave").addEventListener("click", function(){
