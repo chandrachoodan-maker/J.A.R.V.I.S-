@@ -45,71 +45,34 @@ button,input,select{font:inherit}button{cursor:pointer;color:var(--white);backgr
 </section>
 <footer class="foot">J.A.R.V.I.S. • Local-first • No subscription • No API key required for basic functions</footer>
 </div>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app-check.js";
-import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-ai.js";
-
+<script>
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
 const synth=window.speechSynthesis;
 const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 let voices=[],recognition=null,listening=false,timerId=null;
-let geminiModel=null,geminiChat=null,geminiInitError=null;
-const firebaseConfig={
- apiKey:"AIzaSyDOliC9_EDw1Vw6EFlEcfM61P51CFM_IY0",
- authDomain:"jarvis-2985a.firebaseapp.com",
- projectId:"jarvis-2985a",
- storageBucket:"jarvis-2985a.firebasestorage.app",
- messagingSenderId:"307386778036",
- appId:"1:307386778036:web:aad31348b1d3cba849f2e1",
- measurementId:"G-0VRMYP81E6"
-};
-const RECAPTCHA_ENTERPRISE_SITE_KEY="PASTE_SITE_KEY_HERE";
+const JARVIS_API_URL="PASTE_CLOUDFLARE_WORKER_URL_HERE";
 const JARVIS_SYSTEM_INSTRUCTION="You are J.A.R.V.I.S., a sophisticated personal AI assistant. Address the user as Sir. Speak in polished British English with restrained, dry wit and occasional intelligent sarcasm; never let humour obstruct clarity. Be philosophical when appropriate, but do not become theatrical or verbose by default. You are an expert tutor across commerce, accounting, economics, business studies, mathematics, statistics, physics, chemistry, biology, psychology and philosophy. Solve mathematical and theoretical problems carefully, showing logical steps, formulas, assumptions and final answers. Distinguish facts from uncertainty, correct misconceptions politely, and never invent sources, calculations, or actions. If a question is ambiguous, ask one concise clarification.";
-async function initializeGemini(){
- try{
-  const app=initializeApp(firebaseConfig);
-  if(!RECAPTCHA_ENTERPRISE_SITE_KEY||RECAPTCHA_ENTERPRISE_SITE_KEY==="PASTE_SITE_KEY_HERE"){
-   geminiInitError="APP_CHECK_KEY_MISSING";setStatus("AI SETUP: APP CHECK KEY NEEDED");return;
-  }
-  initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(RECAPTCHA_ENTERPRISE_SITE_KEY),isTokenAutoRefreshEnabled:true});
-  const ai=getAI(app,{backend:new GoogleAIBackend()});
-  geminiModel=getGenerativeModel(ai,{model:"gemini-3.8-flash",systemInstruction:JARVIS_SYSTEM_INSTRUCTION});
-  geminiChat=geminiModel.startChat();
-  setStatus("GEMINI ONLINE");
- }catch(error){
-  console.error("JARVIS Gemini initialization failed:",error);
-  geminiInitError=error;setStatus("AI CONNECTION ERROR");
- }
-}
 async function askGemini(question){
- if(!geminiChat){
-  const msg=geminiInitError==="APP_CHECK_KEY_MISSING"
-   ?"The Gemini connection is coded, Sir, but Firebase App Check still needs the public reCAPTCHA Enterprise site key. I have not bypassed Google's security checks."
-   :"My AI connection is not ready yet, Sir. Please check the Firebase App Check registration and try again.";
-  reply(msg);return;
+ if(JARVIS_API_URL==="PASTE_CLOUDFLARE_WORKER_URL_HERE"){
+  reply("My intelligence connection is prepared, Sir, but the secure Cloudflare endpoint has not yet been added. The API key will remain safely on the server, where it belongs.");return;
  }
  try{
   setStatus("GEMINI THINKING");setOrbState("thinking");
-  const result=await geminiChat.sendMessage(question);
-  const answer=result.response.text();
-  if(!answer)throw new Error("Gemini returned an empty response.");
-  reply(answer);
+  const history=[...$("messages").querySelectorAll(".msg")].map(el=>({role:el.classList.contains("user")?"user":"model",text:el.innerText.replace(/^YOU\\s*/,"").replace(/^JARVIS\\s*/,"").trim()})).filter(x=>x.text).slice(-20);
+  const response=await fetch(JARVIS_API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:question,history})});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||("HTTP "+response.status));
+  if(!data.reply)throw new Error("The AI returned an empty response.");
+  reply(data.reply);
  }catch(error){
   console.error("JARVIS Gemini request failed:",error);
   const detail=String(error?.message||error);
-  if(/app.?check|403|401|attest/i.test(detail)){
-   reply("Google's App Check has not accepted this app yet, Sir. The AI code is present, but the Firebase security registration still needs attention.");
-  }else if(/quota|resource.?exhausted|429/i.test(detail)){
-   reply("Gemini's current usage limit has been reached, Sir. We shall have to wait for the free quota to reset.");
-  }else{
-   reply("I couldn't reach Gemini just now, Sir. The connection returned: "+detail.slice(0,220));
-  }
+  if(/quota|resource.?exhausted|429/i.test(detail))reply("Gemini's current free usage limit has been reached, Sir. We shall have to wait for it to reset.");
+  else reply("I couldn't reach my intelligence service, Sir. "+detail.slice(0,180));
  }finally{if($("status").textContent!=="SPEAKING"){setStatus("SYSTEM READY");setOrbState("idle")}}
 }
-initializeGemini();
 const storedVoice=localStorage.getItem("jarvisVoice")||"";
 function setStatus(s){$("status").textContent=s} function setOrbState(state){const orb=$("orb");if(orb)orb.className="orb"+(state&&state!=="idle"?" "+state:"");}
 function addMessage(text,who){
