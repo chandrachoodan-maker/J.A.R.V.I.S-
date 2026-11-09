@@ -5,6 +5,11 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.animation.ValueAnimator
+import android.view.animation.LinearInterpolator
 import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -30,6 +35,7 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private lateinit var status: TextView
     private lateinit var transcript: TextView
     private lateinit var command: EditText
+    private lateinit var coreView: JarvisCoreView
     private var tts: TextToSpeech? = null
     private var recognizer: SpeechRecognizer? = null
     private var timer: CountDownTimer? = null
@@ -75,22 +81,11 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             setPadding(0, dp(5), 0, dp(22))
         }, matchWrap())
 
-        val orb = TextView(this).apply {
-            text = "◉"
-            textSize = 74f
-            gravity = Gravity.CENTER
-            setTextColor(Color.rgb(93, 220, 255))
-            background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(Color.rgb(8, 29, 48))
-                setStroke(dp(2), Color.rgb(43, 139, 178))
-            }
-            elevation = dp(8).toFloat()
-        }
+        coreView = JarvisCoreView(this)
         val orbWrap = LinearLayout(this).apply {
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(16))
-            addView(orb, LinearLayout.LayoutParams(dp(142), dp(142)))
+            addView(coreView, LinearLayout.LayoutParams(dp(190), dp(190)))
         }
         content.addView(orbWrap, matchWrap())
 
@@ -194,8 +189,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
     private fun speak(text: String) {
         transcript.text = text
         status.text = "SPEAKING"
+        coreView.setMode(JarvisCoreView.Mode.SPEAKING)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "jarvis_reply")
-        status.postDelayed({ status.text = "SYSTEM READY" }, 1800)
+        status.postDelayed({ status.text = "SYSTEM READY"; coreView.setMode(JarvisCoreView.Mode.IDLE) }, 1800)
     }
 
     private fun requestAudioPermissionIfNeeded() {
@@ -217,9 +213,9 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         recognizer?.destroy()
         recognizer = SpeechRecognizer.createSpeechRecognizer(this)
         recognizer?.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) { status.text = "LISTENING · SPEAK NOW" }
+            override fun onReadyForSpeech(params: Bundle?) { status.text = "LISTENING · SPEAK NOW"; coreView.setMode(JarvisCoreView.Mode.LISTENING) }
             override fun onBeginningOfSpeech() {}
-            override fun onEndOfSpeech() { status.text = "PROCESSING" }
+            override fun onEndOfSpeech() { status.text = "PROCESSING"; coreView.setMode(JarvisCoreView.Mode.THINKING) }
             override fun onError(error: Int) {
                 status.text = "SYSTEM READY"
                 speak("I didn't catch that, Sir. Please try again.")
@@ -272,8 +268,8 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
             q.contains("who are you") || q.contains("your name") ->
                 speak("I am JARVIS, your personal Android assistant. How may I help you, Sir?")
             q.contains("help") || q.contains("what can you do") ->
-                speak("I can open supported apps, tell you the time and date, set a timer, search the web, and open phone settings. More capabilities can be added.")
-            else -> searchWeb(text)
+                speak("I can open supported apps by command, tell the time and date, set timers, and search the web when you explicitly ask. I do not yet have an AI knowledge engine connected.")
+            else -> speak("I cannot answer that yet, Sir. My knowledge engine is not connected. Say search for, followed by your question, if you would like me to look it up online.")
         }
     }
 
@@ -335,4 +331,48 @@ class MainActivity : Activity(), TextToSpeech.OnInitListener {
         tts?.shutdown()
         super.onDestroy()
     }
+}
+
+
+private class JarvisCoreView(context: android.content.Context) : View(context) {
+    enum class Mode { IDLE, LISTENING, THINKING, SPEAKING }
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var angle = 0f
+    private var mode = Mode.IDLE
+    private val animator = ValueAnimator.ofFloat(0f, 360f).apply {
+        duration = 9000L
+        repeatCount = ValueAnimator.INFINITE
+        interpolator = LinearInterpolator()
+        addUpdateListener { angle = it.animatedValue as Float; invalidate() }
+        start()
+    }
+    fun setMode(next: Mode) { mode = next; invalidate() }
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val cx = width / 2f; val cy = height / 2f
+        val radius = minOf(width, height) * 0.39f
+        val cyan = when (mode) {
+            Mode.LISTENING -> Color.rgb(72, 255, 202)
+            Mode.THINKING -> Color.rgb(170, 120, 255)
+            Mode.SPEAKING -> Color.rgb(85, 205, 255)
+            Mode.IDLE -> Color.rgb(70, 205, 245)
+        }
+        paint.style = Paint.Style.FILL; paint.color = Color.rgb(5, 25, 43)
+        paint.setShadowLayer(28f, 0f, 0f, cyan); canvas.drawCircle(cx, cy, radius * 0.69f, paint); paint.clearShadowLayer()
+        paint.style = Paint.Style.STROKE; paint.strokeWidth = 2.4f; paint.color = cyan
+        canvas.drawCircle(cx, cy, radius * 0.72f, paint)
+        paint.strokeWidth = 1.5f; paint.color = Color.argb(120, 100, 220, 255)
+        canvas.drawCircle(cx, cy, radius * 0.88f, paint)
+        val oval = RectF(cx-radius, cy-radius, cx+radius, cy+radius)
+        paint.strokeWidth = 4f; paint.color = cyan
+        canvas.drawArc(oval, angle, 92f, false, paint); canvas.drawArc(oval, angle + 180f, 52f, false, paint)
+        val inner = RectF(cx-radius*0.58f, cy-radius*0.58f, cx+radius*0.58f, cy+radius*0.58f)
+        paint.strokeWidth = 1.4f; paint.color = Color.argb(180, 125, 230, 255)
+        canvas.save(); canvas.rotate(-angle * 1.6f, cx, cy)
+        canvas.drawArc(inner, 0f, 250f, false, paint); canvas.drawArc(inner, 180f, 70f, false, paint); canvas.restore()
+        paint.style = Paint.Style.FILL; paint.color = Color.WHITE; paint.setShadowLayer(18f, 0f, 0f, cyan)
+        canvas.drawCircle(cx, cy, radius * 0.16f, paint); paint.clearShadowLayer()
+        paint.color = cyan; canvas.drawCircle(cx, cy, radius * 0.075f, paint)
+    }
+    override fun onDetachedFromWindow() { animator.cancel(); super.onDetachedFromWindow() }
 }
